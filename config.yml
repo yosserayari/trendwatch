@@ -1,0 +1,18 @@
+# TrendWatch configuration
+# Edit this file to change what gets tracked — no code changes needed.
+
+# Which sources to check. Must match the keys in
+# scraper/pipeline.py's AVAILABLE_SOURCES dict.
+sources:
+  - hackernews
+
+# Keywords to match, whole-word only (case-insensitive).
+# A story matches if ANY of these appear in its title.
+keywords:
+  - python
+  - ai
+  - openai
+  - chatgpt
+  - llm
+  - machine learning
+  - artificial intelligence

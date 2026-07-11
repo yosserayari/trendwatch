@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TrendWatch Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body class="container mt-5 mb-5">
+
+    <h1 class="mb-2">🔎 TrendWatch Dashboard</h1>
+    <p class="text-muted">Automatically tracks keyword matches from Hacker News. Updates daily.</p>
+
+    <div id="status" class="mb-4 text-muted">Loading data...</div>
+
+    <div id="content" style="display:none;">
+        <h4>Latest Matches</h4>
+        <div class="table-responsive mb-5">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Source</th>
+                        <th>Title</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Fetch the CSV file directly from the repo (works because
+        // GitHub Pages serves it as a plain static file).
+        Papa.parse("storage/history.csv", {
+            download: true,
+            header: true,
+            complete: function(results) {
+                const rows = results.data.filter(row => row.title); // drop empty trailing rows
+
+                document.getElementById("status").style.display = "none";
+                document.getElementById("content").style.display = "block";
+
+                const tableBody = document.getElementById("table-body");
+
+                // Show most recent entries first.
+                const sortedRows = rows.reverse();
+
+                sortedRows.forEach(row => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${row.date_scraped}</td>
+                        <td>${row.source}</td>
+                        <td><a href="${row.url}" target="_blank">${row.title}</a></td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            },
+            error: function(err) {
+                document.getElementById("status").innerText =
+                    "Could not load history.csv yet — it will appear after the first automated run.";
+            }
+        });
+    </script>
+
+</body>
+</html>
