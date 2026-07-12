@@ -34,8 +34,11 @@ AVAILABLE_SOURCES = {
 }
 
 
-def load_config(path: str = "config.yml") -> dict:
-    """Reads keywords and enabled sources from config.yml."""
+def load_config(path: str = "storage/config.yml") -> dict:
+    """
+    Reads keywords and enabled sources from config.yml.
+    FIX: Changed default path to 'storage/config.yml' to match your structure.
+    """
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
@@ -44,13 +47,37 @@ def load_existing_urls() -> set[str]:
     """
     Reads storage/history.csv (if it exists) and returns the set of
     URLs already recorded, so we never save the same story twice.
+    
+    FIX: Added robust error handling for missing/incorrect columns.
     """
     if not os.path.exists(HISTORY_PATH):
         return set()
 
-    with open(HISTORY_PATH, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        return {row["url"] for row in reader}
+    try:
+        with open(HISTORY_PATH, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            
+            # Check if the file has the expected columns
+            if not reader.fieldnames:
+                print(f"⚠️ {HISTORY_PATH} is empty or has no headers")
+                return set()
+            
+            # Check if 'url' column exists
+            if 'url' not in reader.fieldnames:
+                print(f"⚠️ No 'url' column in {HISTORY_PATH}")
+                print(f"   Available columns: {reader.fieldnames}")
+                print(f"   Will recreate the file with correct headers")
+                return set()
+            
+            # Get all URLs (skip empty ones)
+            urls = {row["url"] for row in reader if row.get("url")}
+            print(f"📊 Loaded {len(urls)} existing URLs from history")
+            return urls
+            
+    except Exception as e:
+        print(f"❌ Error reading history file: {e}")
+        print("   Starting with empty history")
+        return set()
 
 
 def append_to_history(new_items: list[dict]) -> None:
@@ -58,22 +85,33 @@ def append_to_history(new_items: list[dict]) -> None:
     Adds new matched items to history.csv, stamping each with the
     current UTC date/time. Creates the file with headers if it
     doesn't exist yet.
+    
+    FIX: Added better error handling and file creation.
     """
+    # Ensure the storage directory exists
+    os.makedirs(os.path.dirname(HISTORY_PATH), exist_ok=True)
+    
     file_exists = os.path.exists(HISTORY_PATH)
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
-    with open(HISTORY_PATH, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=HISTORY_FIELDS)
-        if not file_exists:
-            writer.writeheader()
+    try:
+        with open(HISTORY_PATH, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=HISTORY_FIELDS)
+            if not file_exists:
+                writer.writeheader()
+                print(f"📁 Created new history file: {HISTORY_PATH}")
 
-        for item in new_items:
-            writer.writerow({
-                "date_scraped": timestamp,
-                "source": item["source"],
-                "title": item["title"],
-                "url": item["url"],
-            })
+            for item in new_items:
+                writer.writerow({
+                    "date_scraped": timestamp,
+                    "source": item["source"],
+                    "title": item["title"],
+                    "url": item["url"],
+                })
+            print(f"✅ Added {len(new_items)} new items to history")
+            
+    except Exception as e:
+        print(f"❌ Error writing to history: {e}")
 
 
 def run_pipeline() -> list[dict]:
@@ -81,24 +119,60 @@ def run_pipeline() -> list[dict]:
     Runs the full pipeline once. Returns the list of NEW items
     found this run (useful later for sending alerts on just the
     new ones, not everything).
+    
+    FIX: Added better error handling for missing config.
     """
-    config = load_config()
-    keywords = config["keywords"]
-    enabled_source_names = config["sources"]
+    try:
+        config = load_config()
+        keywords = config.get("keywords", [])
+        enabled_source_names = config.get("sources", [])
+        
+        if not keywords:
+            print("⚠️ No keywords found in config.yml")
+            return []
+        
+        if not enabled_source_names:
+            print("⚠️ No sources enabled in config.yml")
+            return []
+            
+    except FileNotFoundError:
+        print("❌ config.yml not found in storage/ directory")
+        print("   Creating default config.yml...")
+        create_default_config()
+        return []
+    except Exception as e:
+        print(f"❌ Error loading config: {e}")
+        return []
 
     already_seen = load_existing_urls()
     all_new_items = []
 
     for source_name in enabled_source_names:
-        source_class = AVAILABLE_SOURCES[source_name]
-        source = source_class()
+        try:
+            source_class = AVAILABLE_SOURCES.get(source_name)
+            if not source_class:
+                print(f"⚠️ Unknown source: {source_name}")
+                continue
+                
+            source = source_class()
+            raw_items = source.get_items()
+            
+            if not raw_items:
+                print(f"ℹ️ No items from {source_name}")
+                continue
+                
+            matched_items = filter_items(raw_items, keywords)
+            print(f"🔍 {source_name}: {len(matched_items)} matched keywords")
 
-        raw_items = source.get_items()
-        matched_items = filter_items(raw_items, keywords)
-
-        # Only keep items we haven't already saved before.
-        new_items = [item for item in matched_items if item["url"] not in already_seen]
-        all_new_items.extend(new_items)
+            # Only keep items we haven't already saved before.
+            new_items = [item for item in matched_items if item["url"] not in already_seen]
+            all_new_items.extend(new_items)
+            
+            if new_items:
+                print(f"🆕 {source_name}: {len(new_items)} new items found")
+                
+        except Exception as e:
+            print(f"❌ Error processing source {source_name}: {e}")
 
     if all_new_items:
         append_to_history(all_new_items)
@@ -106,6 +180,28 @@ def run_pipeline() -> list[dict]:
     return all_new_items
 
 
+def create_default_config():
+    """Create a default config.yml file if missing"""
+    import yaml
+    
+    default_config = {
+        "keywords": ["python", "ai", "openai", "chatgpt", "machine learning", "llm"],
+        "sources": ["hackernews"],
+        "alerts": {
+            "discord": {"enabled": False, "webhook_url": ""},
+            "email": {"enabled": False, "to": "", "smtp": ""}
+        }
+    }
+    
+    os.makedirs("storage", exist_ok=True)
+    with open("storage/config.yml", "w", encoding="utf-8") as f:
+        yaml.dump(default_config, f, default_flow_style=False)
+    print("✅ Created default config.yml in storage/")
+
+
 if __name__ == "__main__":
     found = run_pipeline()
-    print(f"Pipeline complete. {len(found)} new matching stories found.")
+    print(f"\n{'='*50}")
+    print(f"✅ Pipeline complete. {len(found)} new matching stories found.")
+    print(f"{'='*50}")
+    
