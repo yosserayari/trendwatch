@@ -1,5 +1,4 @@
 name: Daily TrendWatch Scraper
-
 on:
   schedule:
     # Runs at 9:00 AM and 6:00 PM UTC daily
@@ -10,23 +9,22 @@ on:
     paths:
       - 'scraper/**'
       - 'storage/config.yml'
-
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    
+
     # Prevent multiple concurrent runs
     concurrency:
       group: scraper-job
       cancel-in-progress: true
-    
+
     steps:
       # 1. Checkout code
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       # 2. Set up Python
       - name: 🐍 Set up Python
         uses: actions/setup-python@v5
@@ -34,7 +32,7 @@ jobs:
           python-version: '3.11'
           architecture: 'x64'
           cache: 'pip'
-      
+
       # 3. Install dependencies
       - name: 📦 Install dependencies
         run: |
@@ -45,12 +43,13 @@ jobs:
             pip install requests beautifulsoup4 pandas lxml pyyaml
           fi
           pip list
-      
+
       # 4. Run the pipeline
       - name: 🚀 Run pipeline
         id: scrape
         run: |
           python -m scraper.pipeline
+
       # 5. Commit and push
       - name: 📤 Commit and push
         run: |
@@ -80,18 +79,12 @@ jobs:
           script: |
             const issueBody = `
             ## ⚠️ TrendWatch Scraper Failed
-            
+
             **Time:** ${new Date().toLocaleString()}
             **Job:** ${context.job}
             **Run ID:** ${context.runId}
-            
+
             Please check the [workflow logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.
             `;
-            
+
             await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `⚠️ Scraper Failed - ${new Date().toLocaleDateString()}`,
-              body: issueBody,
-              labels: ['bug', 'automation'],
-            });
