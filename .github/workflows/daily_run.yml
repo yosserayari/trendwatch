@@ -51,39 +51,17 @@ jobs:
         id: scrape
         run: |
           python -m scraper.pipeline
-      
-      # 5. Check for changes
-      - name: 🔍 Check for changes
-        id: check_changes
-        run: |
-          if git status --porcelain | grep -E 'storage/history.csv|dashboard/index.html'; then
-            echo "changes=true" >> $GITHUB_OUTPUT
-            echo "✅ Changes detected"
-          else
-            echo "changes=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No changes to commit"
-          fi
-      
-      # 6. Commit and push changes
+      # 5. Commit and push
       - name: 📤 Commit and push
-        if: steps.check_changes.outputs.changes == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S UTC")
-          git add storage/history.csv dashboard/index.html 2>/dev/null || true
-          
-          if git diff --staged --quiet; then
-            echo "ℹ️ No staged changes to commit"
-            exit 0
-          fi
-          
-          git commit -m "🤖 Auto-update: Scraped data ($TIMESTAMP)"
+          git add storage/history.csv dashboard/index.html
+          git commit -m "Auto-update: new scrape results" || echo "No changes to commit"
+          git pull --rebase origin main
           git push
-          echo "✅ Changes committed and pushed"
-      
-      # 7. Upload artifacts (for debugging)
+
+      # 6. Upload artifacts (for debugging)
       - name: 📎 Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -93,8 +71,8 @@ jobs:
             storage/history.csv
             dashboard/index.html
           retention-days: 7
-      
-      # 8. Send notification on failure
+
+      # 7. Send notification on failure
       - name: 📱 Send failure notification
         if: failure()
         uses: actions/github-script@v7
