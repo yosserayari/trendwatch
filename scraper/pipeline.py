@@ -34,7 +34,7 @@ AVAILABLE_SOURCES = {
 }
 
 
-def load_config(path: str = "storage/config.yml") -> dict:
+def load_config(path: str = "config.yml") -> dict:
     """
     Reads keywords and enabled sources from config.yml.
     FIX: Changed default path to 'storage/config.yml' to match your structure.
