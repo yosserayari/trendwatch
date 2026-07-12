@@ -51,6 +51,12 @@ class BaseSource(ABC):
         Convenience method: fetch + parse in one call.
         Subclasses normally don't need to override this —
         they just implement fetch() and parse() above.
+        
+        Added error handling to prevent pipeline crashes.
         """
-        raw_content = self.fetch()
-        return self.parse(raw_content)
+        try:
+            raw_content = self.fetch()
+            return self.parse(raw_content)
+        except Exception as e:
+            print(f"❌ Error getting items from {self.name}: {e}")
+            return []

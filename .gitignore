@@ -1,15 +1,33 @@
-# Python cache/bytecode
+# Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.pycache/
 
-# Virtual environment folders
+# Virtual environments
 venv/
-.venv/
 env/
+ENV/
+.venv/
 
-# Editor/OS junk
+# IDE
 .vscode/
-.DS_Store
+.idea/
+*.swp
+*.swo
 
-# Secrets (never commit real credentials)
+# Logs and data
+*.log
+*.csv
+*.db
+storage/*.csv
+!storage/.gitignore  # Keep the .gitignore file
+
+# Environment variables
 .env
+config.local.yml
+
+# OS files
+.DS_Store
+Thumbs.db
