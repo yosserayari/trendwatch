@@ -48,7 +48,7 @@ def load_existing_urls() -> set[str]:
     Reads storage/history.csv (if it exists) and returns the set of
     URLs already recorded, so we never save the same story twice.
     
-    FIX: Added robust error handling for missing/incorrect columns.
+    FIX: Handles both 'url' and 'URL' column names.
     """
     if not os.path.exists(HISTORY_PATH):
         return set()
@@ -62,15 +62,25 @@ def load_existing_urls() -> set[str]:
                 print(f"⚠️ {HISTORY_PATH} is empty or has no headers")
                 return set()
             
-            # Check if 'url' column exists
-            if 'url' not in reader.fieldnames:
-                print(f"⚠️ No 'url' column in {HISTORY_PATH}")
+            # Find the URL column (case-insensitive)
+            url_column = None
+            for col in reader.fieldnames:
+                if col.lower() == 'url':
+                    url_column = col
+                    break
+            
+            if url_column is None:
+                print(f"⚠️ No 'url' column found in {HISTORY_PATH}")
                 print(f"   Available columns: {reader.fieldnames}")
                 print(f"   Will recreate the file with correct headers")
+                # Rename the file as backup and recreate
+                backup_path = HISTORY_PATH + ".backup"
+                os.rename(HISTORY_PATH, backup_path)
+                print(f"📦 Old file backed up to: {backup_path}")
                 return set()
             
             # Get all URLs (skip empty ones)
-            urls = {row["url"] for row in reader if row.get("url")}
+            urls = {row[url_column] for row in reader if row.get(url_column)}
             print(f"📊 Loaded {len(urls)} existing URLs from history")
             return urls
             
@@ -204,4 +214,3 @@ if __name__ == "__main__":
     print(f"\n{'='*50}")
     print(f"✅ Pipeline complete. {len(found)} new matching stories found.")
     print(f"{'='*50}")
-    
