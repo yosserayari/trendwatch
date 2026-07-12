@@ -19,10 +19,7 @@ ENV/
 
 # Logs and data
 *.log
-*.csv
 *.db
-storage/*.csv
-!storage/.gitignore  # Keep the .gitignore file
 
 # Environment variables
 .env
