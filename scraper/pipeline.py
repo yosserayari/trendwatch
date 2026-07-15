@@ -23,6 +23,7 @@ import yaml
 
 from scraper.sources.hackernews import HackerNewsSource
 from scraper.filters import filter_items
+from alerts.discord import send_discord_alert
 
 HISTORY_PATH = "storage/history.csv"
 HISTORY_FIELDS = ["date_scraped", "source", "title", "url"]
@@ -183,9 +184,9 @@ def run_pipeline() -> list[dict]:
                 
         except Exception as e:
             print(f"❌ Error processing source {source_name}: {e}")
-
-    if all_new_items:
-        append_to_history(all_new_items)
+        if all_new_items:
+            append_to_history(all_new_items)
+            send_discord_alert(all_new_items)
 
     return all_new_items
 
