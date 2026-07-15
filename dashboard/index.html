@@ -2,66 +2,240 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrendWatch Dashboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card-bg: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-dim: #8b949e;
+            --accent: #58a6ff;
+            --accent-glow: rgba(88, 166, 255, 0.15);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 40px 24px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        header .icon { font-size: 28px; }
+
+        h1 { font-size: 24px; margin: 0; font-weight: 600; }
+
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 14px;
+            margin: 6px 0 32px 0;
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-top: 4px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+
+        .story-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 18px;
+            margin-bottom: 10px;
+            transition: border-color 0.15s ease;
+        }
+
+        .story-card:hover {
+            border-color: var(--accent);
+        }
+
+        .story-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-glow);
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .story-date {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .story-title a {
+            color: var(--text);
+            text-decoration: none;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        .story-title a:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        #status {
+            color: var(--text-dim);
+            font-size: 14px;
+            padding: 20px 0;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+
+        footer a { color: var(--accent); }
+    </style>
 </head>
-<body class="container mt-5 mb-5">
+<body>
+    <div class="container">
+        <header>
+            <span class="icon">🔎</span>
+            <h1>TrendWatch</h1>
+        </header>
+        <p class="subtitle">Automated launch & funding signal tracker for Hacker News. Runs twice daily, zero manual checking.</p>
 
-    <h1 class="mb-2">🔎 TrendWatch Dashboard</h1>
-    <p class="text-muted">Automatically tracks keyword matches from Hacker News. Updates daily.</p>
-
-    <div id="status" class="mb-4 text-muted">Loading data...</div>
-
-    <div id="content" style="display:none;">
-        <h4>Latest Matches</h4>
-        <div class="table-responsive mb-5">
-            <table class="table table-hover table-striped">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Source</th>
-                        <th>Title</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body"></tbody>
-            </table>
+        <div class="stats-bar" id="stats-bar" style="display:none;">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total">–</div>
+                <div class="stat-label">Total matches</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-today">–</div>
+                <div class="stat-label">Last 24 hours</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-updated">–</div>
+                <div class="stat-label">Last updated</div>
+            </div>
         </div>
+
+        <div id="status">Loading data...</div>
+
+        <div id="content" style="display:none;">
+            <div class="section-title">Latest Matches</div>
+            <div id="story-list"></div>
+        </div>
+
+        <footer>
+            Built with Python + GitHub Actions · <a href="https://github.com/yosserayari/trendwatch" target="_blank">View source</a>
+        </footer>
     </div>
 
     <script>
-        // Fetch the CSV file directly from the repo (works because
-        // GitHub Pages serves it as a plain static file).
         Papa.parse("../storage/history.csv", {
             download: true,
             header: true,
             complete: function(results) {
-                const rows = results.data.filter(row => row.title); // drop empty trailing rows
+                const rows = results.data.filter(row => row.title);
+
+                if (rows.length === 0) {
+                    document.getElementById("status").innerText =
+                        "No matches yet — check back after the next scheduled run.";
+                    return;
+                }
 
                 document.getElementById("status").style.display = "none";
                 document.getElementById("content").style.display = "block";
+                document.getElementById("stats-bar").style.display = "grid";
 
-                const tableBody = document.getElementById("table-body");
+                const sortedRows = [...rows].reverse();
 
-                // Show most recent entries first.
-                const sortedRows = rows.reverse();
+                // Stats
+                document.getElementById("stat-total").innerText = rows.length;
 
+                const now = new Date();
+                const last24h = rows.filter(r => {
+                    const d = new Date(r.date_scraped.replace(" ", "T") + "Z");
+                    return (now - d) < 24 * 60 * 60 * 1000;
+                }).length;
+                document.getElementById("stat-today").innerText = last24h;
+
+                const mostRecent = sortedRows[0].date_scraped.split(" ")[0];
+                document.getElementById("stat-updated").innerText = mostRecent;
+
+                // Story cards
+                const list = document.getElementById("story-list");
                 sortedRows.forEach(row => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td>${row.date_scraped}</td>
-                        <td>${row.source}</td>
-                        <td><a href="${row.url}" target="_blank">${row.title}</a></td>
+                    const card = document.createElement("div");
+                    card.className = "story-card";
+                    card.innerHTML = `
+                        <div class="story-top">
+                            <span class="badge">${row.source}</span>
+                            <span class="story-date">${row.date_scraped} UTC</span>
+                        </div>
+                        <div class="story-title">
+                            <a href="${row.url}" target="_blank">${row.title}</a>
+                        </div>
                     `;
-                    tableBody.appendChild(tr);
+                    list.appendChild(card);
                 });
             },
-            error: function(err) {
+            error: function() {
                 document.getElementById("status").innerText =
                     "Could not load history.csv yet — it will appear after the first automated run.";
             }
         });
     </script>
-
 </body>
 </html>
