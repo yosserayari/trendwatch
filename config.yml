@@ -8,11 +8,22 @@ sources:
 
 # Keywords to match, whole-word only (case-insensitive).
 # A story matches if ANY of these appear in its title.
+#
+# These are chosen to catch ACTIONABLE signals (launches, funding,
+# acquisitions) rather than generic topic chatter (opinion pieces,
+# philosophy posts about "AI" as a concept). This makes the tool
+# useful for competitive intelligence / market monitoring, not just
+# a noisy keyword aggregator.
 keywords:
-  - python
-  - ai
-  - openai
-  - chatgpt
-  - llm
-  - machine learning
-  - artificial intelligence
+  - "Show HN"
+  - "Launch HN"
+  - "YC S26"
+  - "YC W26"
+  - "raises $"
+  - "acquired by"
+  - "acquires"
+  - "open sources"
+  - "open-sources"
+  - "series a"
+  - "series b"
+  - "seed round"
