@@ -32,7 +32,7 @@
     <script>
         // Fetch the CSV file directly from the repo (works because
         // GitHub Pages serves it as a plain static file).
-        Papa.parse("storage/history.csv", {
+        Papa.parse("../storage/history.csv", {
             download: true,
             header: true,
             complete: function(results) {
