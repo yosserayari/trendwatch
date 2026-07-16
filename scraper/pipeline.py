@@ -1,20 +1,3 @@
-"""
-pipeline.py
-
-The orchestrator. This file doesn't scrape or filter anything itself —
-it just calls the right pieces in the right order:
-
-    1. Load settings from config.yml (keywords, which sources to use)
-    2. Ask each source for its items (fetch + parse)
-    3. Filter those items by keyword
-    4. Remove duplicates already seen before
-    5. Append new matches to storage/history.csv, with a timestamp
-
-Keeping this separate from the sources/filters means you can change
-the ORDER or ADD steps (like alerts) here, without touching the
-scraping or filtering logic itself.
-"""
-
 import csv
 import os
 from datetime import datetime, timezone
