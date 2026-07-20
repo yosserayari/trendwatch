@@ -6,33 +6,14 @@ An automated, serverless market intelligence engine that monitors developer plat
 
 ---
 
-## 🏗️ System Architecture
-
-Designed for high reliability and zero infrastructure cost using GitHub Actions and static site hosting.
-
-[ External Data Sources ] (Hacker News API / Web RSS)
-│
-▼
-┌────────────────────────┐
-│  Ingestion & Parsing   │ ◄── Exponential Backoff & Fault-Tolerant Fetching
-└─────────┬──────────────┘
-│
-▼
-┌────────────────────────┐
-│  Regex Pattern Engine  │ ◄── Whole-word boundary matching (Zero Topic Noise)
-└─────────┬──────────────┘
-│
-├───► 📊 Local History Log (CSV Storage for Trend Tracking)
-│
-▼
-┌────────────────────────┐
-│ Notifications & Output │
-└─────────┬──────────────┘
-│
-├───► 💬 Live Slack Webhooks (Block Kit Alerts)
-└───► 🌐 GitHub Pages Live Dashboard
-
----
+```mermaid
+graph TD
+    A[Hacker News & Web Sources] -->|Fetch Data| B[Ingestion & Parsing Engine]
+    B -->|Exponential Backoff| C[Regex Pattern Engine]
+    C -->|Filter Signals| D[CSV History Tracker]
+    C -->|Trigger Events| E[Slack Webhook Alerts]
+    D --> F[GitHub Pages Dashboard]
+```
 
 ## 🎯 What Problem It Solves
 
