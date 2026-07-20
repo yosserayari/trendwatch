@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
 
+from scraper.retry import with_retry
+
 
 class BaseSource(ABC):
     name: str = "base"
-
+    @with_retry(max_retries=3, base_delay=1.0, backoff_factor=2.0)
+        
     @abstractmethod
     def fetch(self) -> str:
         raise NotImplementedError

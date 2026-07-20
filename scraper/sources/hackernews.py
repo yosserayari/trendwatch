@@ -1,16 +1,7 @@
-"""
-hackernews.py
-
-The concrete Hacker News source. This is where we implement the
-two methods that base.py demands: fetch() and parse().
-
-Anyone reading this file later (including a client) should be able
-to tell exactly how HN data becomes standardized items.
-"""
-
 import requests
 from bs4 import BeautifulSoup
 from scraper.sources.base import BaseSource
+from scraper.retry import with_retry
 
 
 class HackerNewsSource(BaseSource):
@@ -57,8 +48,9 @@ class HackerNewsSource(BaseSource):
                     continue
 
                 title = span.get_text(strip=True)
-                url = link_tag.get("href", "")
-                
+                href = link_tag.get("href")
+                url = href if isinstance(href, str) else ""
+
                 # Handle relative URLs (e.g., "item?id=12345")
                 if url and url.startswith("item?"):
                     url = f"{self.BASE_URL}{url}"
